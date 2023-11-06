@@ -27,15 +27,22 @@ async function run() {
 
     const foodsCollection = client.db("donationDB").collection("foods");
 
-    // for details btn 
+    // post data in client side
+    app.post("/api/v1/foods", async (req, res) => {
+      const foods = req.body;
+     
+      const result = await foodsCollection.insertOne(foods);
+      res.send(result);
+    });
 
-    app.get('/api/v1/foods/:id', async (req,res)=> {
-      const id = req.params.id
-      const query = {_id: new ObjectId(id)}
-      const result = await foodsCollection.findOne(query)
-      res.send(result)
-    })
+    // for details btn
 
+    app.get("/api/v1/foods/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await foodsCollection.findOne(query);
+      res.send(result);
+    });
 
     app.get("/api/v1/foods:food_quantity", async (req, res) => {
       const food_quantity = req.params.food_quantity;
