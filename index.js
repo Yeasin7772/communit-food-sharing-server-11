@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 
 const app = express();
@@ -27,7 +27,16 @@ async function run() {
 
     const foodsCollection = client.db("donationDB").collection("foods");
 
-    
+    // for details btn 
+
+    app.get('/api/v1/foods/:id', async (req,res)=> {
+      const id = req.params.id
+      const query = {_id: new ObjectId(id)}
+      const result = await foodsCollection.findOne(query)
+      res.send(result)
+    })
+
+
     app.get("/api/v1/foods:food_quantity", async (req, res) => {
       const food_quantity = req.params.food_quantity;
       const query = { food_quantity: food_quantity };
@@ -38,7 +47,7 @@ async function run() {
     app.get("/api/v1/foods", async (req, res) => {
       const cursor = foodsCollection.find();
       const result = await cursor.toArray();
-      console.log(result);
+      //console.log(result);
       res.send(result);
     });
     // Send a ping to confirm a successful connection
