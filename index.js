@@ -26,11 +26,24 @@ async function run() {
     await client.connect();
 
     const foodsCollection = client.db("donationDB").collection("foods");
+    const requestCollection = client.db("donationDB").collection("request");
+
+    // user donation booking collection
+    // user data get
+   
+
+    //post user data
+
+    app.post("/api/v1/user/request", async (req, res) => {
+      const request = req.body;
+       //console.log(request);
+      const result = await requestCollection.insertOne(request);
+      res.send();
+    });
 
     // post data in client side
     app.post("/api/v1/foods", async (req, res) => {
       const foods = req.body;
-     
       const result = await foodsCollection.insertOne(foods);
       res.send(result);
     });
