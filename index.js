@@ -28,8 +28,39 @@ async function run() {
     const foodsCollection = client.db("donationDB").collection("foods");
     const requestCollection = client.db("donationDB").collection("request");
 
-    // user donation booking collection
+    // user donation request collection
 
+    // patch use approve data
+
+    app.patch("/api/v1/user/request/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const approveRequest = req.body;
+      console.log(approveRequest);
+
+      updateDoc = {
+        $set: {
+          status: approveRequest.status,
+        },
+      };
+
+      const result = await requestCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    // request cancel
+
+    app.delete("/api/v1/user/request/:id", async (req, res) => {
+      const id = req.params.id;
+
+      console.log(id);
+      const query = { _id: new ObjectId(id) };
+      const result = await requestCollection.deleteOne(query);
+
+      res.send(result);
+    });
+
+    //get the email specie
     app.get("/api/v1/user/request/:donator_email", async (req, res) => {
       const donator_email = req.params.donator_email;
       const query = { donator_email: donator_email };
@@ -53,6 +84,7 @@ async function run() {
       const request = req.body;
       //console.log(request);
       const result = await requestCollection.insertOne(request);
+      console.log(result);
       res.send();
     });
 
@@ -64,14 +96,13 @@ async function run() {
       const options = { upsert: true };
       const foodUpdate = req.body;
 
-
-    //   const requestFood = {
-    //     food_image, food_name,
-    //     donator_image, donator_name,
-    //     food_quantity, pickup_location,
-    //     expired_date, additional_notes,
-    //     donator_email, donation_money, request: _id
-    // }
+      //   const requestFood = {
+      //     food_image, food_name,
+      //     donator_image, donator_name,
+      //     food_quantity, pickup_location,
+      //     expired_date, additional_notes,
+      //     donator_email, donation_money, request: _id
+      // }
 
       const food = {
         $set: {
@@ -84,15 +115,10 @@ async function run() {
           additional_notes: foodUpdate.additional_notes,
           donator_email: foodUpdate.donator_email,
           donation_money: foodUpdate.donation_money,
-          
         },
       };
 
-      const result = await foodsCollection.updateOne(
-        filter,
-        food,
-        options
-      );
+      const result = await foodsCollection.updateOne(filter, food, options);
       //console.log(result);
       res.send(result);
     });
@@ -103,7 +129,7 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await foodsCollection.deleteOne(query);
-      console.log(result);
+      // console.log(result);
       res.send(result);
     });
 
