@@ -29,16 +29,46 @@ async function run() {
     const requestCollection = client.db("donationDB").collection("request");
 
     // user donation booking collection
+
+    app.get("/api/v1/user/request/:donator_email", async (req, res) => {
+      const donator_email = req.params.donator_email;
+      const query = { donator_email: donator_email };
+      const result = await requestCollection.findOne(query);
+      res.send(result);
+    });
     // user data get
-   
+    app.get("/api/v1/user/request", async (req, res) => {
+      console.log(req.query.email);
+      let query = {};
+      if (req.query?.email) {
+        query = { email: req.query.email };
+      }
+      const result = await requestCollection.find().toArray();
+      res.send(result);
+    });
 
     //post user data
 
     app.post("/api/v1/user/request", async (req, res) => {
       const request = req.body;
-       //console.log(request);
+      //console.log(request);
       const result = await requestCollection.insertOne(request);
       res.send();
+    });
+
+
+    // update table Food
+
+    app.put()
+
+    // delete food
+
+    app.delete("/api/v1/foods/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await foodsCollection.deleteOne(query);
+      console.log(result);
+      res.send(result);
     });
 
     // post data in client side
