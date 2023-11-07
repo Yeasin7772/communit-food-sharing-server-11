@@ -56,10 +56,46 @@ async function run() {
       res.send();
     });
 
-
     // update table Food
 
-    app.put()
+    app.put("/api/v1/foods/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const foodUpdate = req.body;
+
+
+    //   const requestFood = {
+    //     food_image, food_name,
+    //     donator_image, donator_name,
+    //     food_quantity, pickup_location,
+    //     expired_date, additional_notes,
+    //     donator_email, donation_money, request: _id
+    // }
+
+      const food = {
+        $set: {
+          food_name: foodUpdate.food_name,
+          food_image: foodUpdate.food_image,
+          donator_name: foodUpdate.donator_name,
+          food_quantity: foodUpdate.food_quantity,
+          pickup_location: foodUpdate.pickup_location,
+          expired_date: foodUpdate.expired_date,
+          additional_notes: foodUpdate.additional_notes,
+          donator_email: foodUpdate.donator_email,
+          donation_money: foodUpdate.donation_money,
+          
+        },
+      };
+
+      const result = await foodsCollection.updateOne(
+        filter,
+        food,
+        options
+      );
+      //console.log(result);
+      res.send(result);
+    });
 
     // delete food
 
