@@ -52,8 +52,7 @@ async function run() {
 
     app.delete("/api/v1/user/request/:id", async (req, res) => {
       const id = req.params.id;
-
-      console.log(id);
+      //console.log(id);
       const query = { _id: new ObjectId(id) };
       const result = await requestCollection.deleteOne(query);
 
@@ -84,7 +83,7 @@ async function run() {
       const request = req.body;
       //console.log(request);
       const result = await requestCollection.insertOne(request);
-      console.log(result);
+      // console.log(result);
       res.send();
     });
 
@@ -123,6 +122,48 @@ async function run() {
       res.send(result);
     });
 
+  
+    //   let sortObj = {};
+
+    //   const food_name = req.query.food_name;
+    //   const sortField = req.query.sortField;
+    //   const sortOrder = req.query.sortOrder;
+
+    //   if (food_name) {
+    //     queryObj.food_name = food_name;
+    //   }
+
+    //   if (sortField && sortOrder) {
+    //     if (sortOrder === "asc") {
+    //       sortObj[sortField] = 1;
+    //     } else if (sortOrder === "desc") {
+    //       sortObj[sortField] = -1;
+    //     }
+    //   }
+
+    //   // Apply filtering and sorting to the data
+    //   let filteredFoods = [...foods];
+
+    //   if (food_name) {
+    //     filteredFoods = filteredFoods.filter((food_name) =>
+    //       food.food_name.toLowerCase().includes(food_name.toLowerCase())
+    //     );
+    //   }
+
+    //   if (sortField && sortOrder) {
+    //     filteredFoods.sort((a, b) => {
+    //       if (a[sortField] < b[sortField]) {
+    //         return sortObj[sortField];
+    //       } else if (a[sortField] > b[sortField]) {
+    //         return -sortObj[sortField];
+    //       } else {
+    //         return 0;
+    //       }
+    //     });
+    //   }
+
+    //   res.send(filteredFoods);
+    // });
     // delete food
 
     app.delete("/api/v1/foods/:id", async (req, res) => {
@@ -156,10 +197,29 @@ async function run() {
       res.send(result);
     });
 
+    // food query sorting
+    // http://localhost:5000/api/v1/foods?food_name=Pizza%20Margherita 
+
     app.get("/api/v1/foods", async (req, res) => {
-      const cursor = foodsCollection.find();
+      let queryObj = {};
+      let sortObj = {};
+      const food_name = req.query.food_name;
+      const sortField = req.query.sortField;
+      const sortOrder = req.query.sortOrder;
+
+      if (food_name) {
+        queryObj.food_name = food_name;
+      }
+      if (sortField && sortOrder) {
+        if (sortOrder === "asc") {
+          sortObj[sortField] = 1;
+        } else if (sortOrder === "dsc") {
+          sortObj[sortField] = -1;
+        }
+      }
+
+      const cursor = foodsCollection.find(queryObj).sort(sortObj);
       const result = await cursor.toArray();
-      //console.log(result);
       res.send(result);
     });
     // Send a ping to confirm a successful connection
