@@ -2,12 +2,23 @@ const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
-
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 const app = express();
 const port = process.env.PORT || 5000;
 
-app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://communit-food-sharing.web.app",
+      "https://communit-food-sharing.firebaseapp.com",
+    ],
+    credentials: true,
+  })
+);
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.o2tazeo.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -23,10 +34,28 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const foodsCollection = client.db("donationDB").collection("foods");
     const requestCollection = client.db("donationDB").collection("request");
+
+    // token verify
+    const gateman = (req, res, next) => {
+      const { token } = req.cookies;
+      // console.log(token);
+      if (!token) {
+        return res.status(401).send({ message: "You are not authorize" });
+      }
+
+      jwt.verify(token, process.env.DB_USER_ACCESS, function (err, decoded) {
+        if (err) {
+          return res.status(401).send({ message: "You are not authorize" });
+        }
+
+        req.user = decoded;
+        next();
+      });
+    };
 
     // user donation request collection
 
@@ -36,7 +65,7 @@ async function run() {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const approveRequest = req.body;
-      console.log(approveRequest);
+      //console.log(approveRequest);
 
       updateDoc = {
         $set: {
@@ -68,7 +97,14 @@ async function run() {
     });
     // user data get
     app.get("/api/v1/user/request", async (req, res) => {
-      console.log(req.query.email);
+      const queryEmail = req.query.email;
+      const tokenEmail = req.query.email;
+      // match user token email
+
+      if (queryEmail !== tokenEmail) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      //console.log(req.query.email);
       let query = {};
       if (req.query?.email) {
         query = { email: req.query.email };
@@ -77,16 +113,80 @@ async function run() {
       res.send(result);
     });
 
+    app.post("/api/v1/auth/access-token", (req, res) => {
+      // create in token
+      const user = req.body;
+      console.log(user);
+      const token = jwt.sign(user, process.env.DB_USER_ACCESS, {
+        expiresIn: 60 * 60,
+      });
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: "none",
+        })
+        .send({ success: true });
+    });
+
     //post user data
+
+    /// manage singe food
+
+    app.get("/api/v1/user/request/ownerReq", async (req, res) => {
+      const ownerEmail = req.query.ownerEmail;
+      console.log(req.query);
+
+      const cursor = requestCollection.find({ ownerEmail: ownerEmail });
+      // console.log(cursor);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    app.put("/api/v1/user/request/:id", async (req, res) => {
+      const id = req.params.id;
+      // console.log(id);
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const { status } = req.body;
+
+      const updateConditions = {
+        $set: {
+          status,
+        },
+      };
+      console.log(updateConditions);
+
+      const result = await requestCollection.updateOne(
+        filter,
+        updateConditions,
+        options
+      );
+      console.log(result);
+      res.send(result);
+    });
+
+    app.get("/api/v1/user/request", async (req, res) => {
+      const email = req.query.email;
+      console.log(req.query);
+
+      const cursor = applyCollection.find({ email: email });
+      // console.log(cursor)
+      const result = await cursor.toArray();
+      res.send(result);
+    });
 
     app.post("/api/v1/user/request", async (req, res) => {
       const request = req.body;
-      //console.log(request);
-      const result = await requestCollection.insertOne(request);
-      // console.log(result);
-      res.send();
+      try {
+        const result = await requestCollection.insertOne(request);
+        //console.log(result);
+        res.status(201).json({ insertedId: result.insertedId });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: " Server Error" });
+      }
     });
-
     // update table Food
 
     app.put("/api/v1/foods/:id", async (req, res) => {
@@ -122,48 +222,6 @@ async function run() {
       res.send(result);
     });
 
-  
-    //   let sortObj = {};
-
-    //   const food_name = req.query.food_name;
-    //   const sortField = req.query.sortField;
-    //   const sortOrder = req.query.sortOrder;
-
-    //   if (food_name) {
-    //     queryObj.food_name = food_name;
-    //   }
-
-    //   if (sortField && sortOrder) {
-    //     if (sortOrder === "asc") {
-    //       sortObj[sortField] = 1;
-    //     } else if (sortOrder === "desc") {
-    //       sortObj[sortField] = -1;
-    //     }
-    //   }
-
-    //   // Apply filtering and sorting to the data
-    //   let filteredFoods = [...foods];
-
-    //   if (food_name) {
-    //     filteredFoods = filteredFoods.filter((food_name) =>
-    //       food.food_name.toLowerCase().includes(food_name.toLowerCase())
-    //     );
-    //   }
-
-    //   if (sortField && sortOrder) {
-    //     filteredFoods.sort((a, b) => {
-    //       if (a[sortField] < b[sortField]) {
-    //         return sortObj[sortField];
-    //       } else if (a[sortField] > b[sortField]) {
-    //         return -sortObj[sortField];
-    //       } else {
-    //         return 0;
-    //       }
-    //     });
-    //   }
-
-    //   res.send(filteredFoods);
-    // });
     // delete food
 
     app.delete("/api/v1/foods/:id", async (req, res) => {
@@ -198,7 +256,7 @@ async function run() {
     });
 
     // food query sorting
-    // http://localhost:5000/api/v1/foods?food_name=Pizza%20Margherita 
+    // http://localhost:5000/api/v1/foods?food_name=Pizza%20Margherita
 
     app.get("/api/v1/foods", async (req, res) => {
       let queryObj = {};
